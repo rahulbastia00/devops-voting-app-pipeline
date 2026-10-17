@@ -8,7 +8,7 @@ services:
       - OPTION_A=Cats
       - OPTION_B=Dogs
     networks:
-      - front-tier
+      - vote-tier
     depends_on:
       redis:
         condition: service_healthy
@@ -32,8 +32,8 @@ services:
     image: rahulbastia/examplevotingapp_worker:latest
     container_name: worker-service
     networks:
-      - front-tier
-      - back-tier
+      - vote-tier
+      - result-tier
     depends_on:
       redis:
         condition: service_healthy
@@ -45,7 +45,7 @@ services:
     image: redis:7.0-alpine
     container_name: redis-service
     networks:
-      - front-tier
+      - vote-tier
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -63,7 +63,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
-      - back-tier
+      - result-tier
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
