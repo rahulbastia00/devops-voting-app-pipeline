@@ -1,32 +1,39 @@
 services:
   vote:
-    image: YOUR_DOCKERHUB_USERNAME/examplevotingapp_vote:latest
+    image: rahulbastia/examplevotingapp_vote:latest
     container_name: vote-service
     ports:
       - "5000:80"
     environment:
       - OPTION_A=Cats
       - OPTION_B=Dogs
+    networks:
+      - front-tier
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
 
   result:
-    image: YOUR_DOCKERHUB_USERNAME/examplevotingapp_result:latest
+    image: rahulbastia/examplevotingapp_result:latest
     container_name: result-service
     ports:
       - "5001:4000"
     environment:
       - PORT=4000
+    networks:
+      - result-tier
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
   worker:
-    image: YOUR_DOCKERHUB_USERNAME/examplevotingapp_worker:latest
+    image: rahulbastia/examplevotingapp_worker:latest
     container_name: worker-service
+    networks:
+      - front-tier
+      - back-tier
     depends_on:
       redis:
         condition: service_healthy
@@ -37,6 +44,8 @@ services:
   redis:
     image: redis:7.0-alpine
     container_name: redis-service
+    networks:
+      - front-tier
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -53,12 +62,20 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - back-tier
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
       timeout: 3s
       retries: 5
     restart: unless-stopped
+
+networks:
+  vote-tier:
+    driver: bridge
+  result-tier:
+    driver: bridge
 
 volumes:
   db-data:
