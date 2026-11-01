@@ -1,0 +1,47 @@
+---
+- name: Setup K3s Cluster Node on AWS EC2
+  hosts: k3s_nodes
+  become: yes
+  tasks:
+    - name: Wait for cloud-init and system updates to complete
+      ansible.builtin.raw: test -e /var/lib/cloud/instance/boot-finished
+      register: cloud_init
+      until: cloud_init.rc == 0
+      retries: 30
+      delay: 5
+
+    - name: Update apt cache and install base packages
+      ansible.builtin.apt:
+        update_cache: yes
+        name:
+          - curl
+          - apt-transport-https
+          - git
+        state: present
+
+    - name: Install K3s server with public TLS SAN
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable=traefik --tls-san {{ inventory_hostname }} --write-kubeconfig-mode 644" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for K3s node to be ready
+      ansible.builtin.command: /usr/local/bin/kubectl get nodes
+      register: k3s_status
+      until: '" Ready " in k3s_status.stdout'
+      retries: 15
+      delay: 5
+
+    - name: Fetch kubeconfig to local machine
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ../k3s-aws.yaml
+        flat: yes
+
+    - name: Update server address in local kubeconfig
+      become: no
+      delegate_to: localhost
+      ansible.builtin.replace:
+        path: ../k3s-aws.yaml
+        regexp: '127\.0\.0\.1'
+        replace: "{{ inventory_hostname }}"
