@@ -9,7 +9,7 @@ on:
       - "result/**"
       - "worker/**"
       - "k8s/**"
-      - ".github/workflows/ci.yml"
+      - ".github/workflows/ci.*"
   workflow_dispatch:
 
 jobs:
