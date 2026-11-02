@@ -20,7 +20,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# 1. Fetch latest Ubuntu 22.04 LTS AMI
+# Fetch latest Ubuntu 22.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
   filter {
@@ -34,7 +34,7 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
-# 2. Automated SSH Key Pair Generation
+# Automated SSH Key Pair Generation
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -51,7 +51,7 @@ resource "local_file" "private_key" {
   file_permission = "0400"
 }
 
-# 3. Security Group for K3s & Voting App
+# Security Group for K3s & Voting App
 resource "aws_security_group" "k3s_sg" {
   name        = "${var.project_name}-sg"
   description = "Allow inbound SSH, K8s API, and Voting App ports"
@@ -124,7 +124,7 @@ resource "aws_security_group" "k3s_sg" {
   }
 }
 
-# 4. EC2 Compute Instance
+# EC2 Compute Instance
 resource "aws_instance" "k3s_node" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
