@@ -1,776 +1,234 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./images/banner-white.png" width="600px;">
-  <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" src="./images/banner-black.png" width="600px;">
-</picture>
-<br/>
+# End-to-End DevOps & GitOps Pipeline: Example Voting App
 
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/k8sgpt-ai/k8sgpt)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/k8sgpt-ai/k8sgpt/release.yaml)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/k8sgpt-ai/k8sgpt)
-[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7272/badge)](https://bestpractices.coreinfrastructure.org/projects/7272)
-[![Link to documentation](https://img.shields.io/static/v1?label=%F0%9F%93%96&message=Documentation&color=blue)](https://docs.k8sgpt.ai/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go version](https://img.shields.io/github/go-mod/go-version/k8sgpt-ai/k8sgpt.svg)](https://github.com/k8sgpt-ai/k8sgpt)
-[![codecov](https://codecov.io/github/k8sgpt-ai/k8sgpt/graph/badge.svg?token=ZLR7NG8URE)](https://codecov.io/github/k8sgpt-ai/k8sgpt)
-![GitHub last commit (branch)](https://img.shields.io/github/last-commit/k8sgpt-ai/k8sgpt/main)
+[![CI Pipeline](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=github-actions&logoColor=white)](.github/workflows/ci.yaml)
+[![Container Security](https://img.shields.io/badge/Security-Trivy-blue?logo=aqua&logoColor=white)](docs/phase-2-security-devsecops.md)
+[![IaC](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)](terraform/)
+[![Config Management](https://img.shields.io/badge/Automation-Ansible-EE0000?logo=ansible&logoColor=white)](ansible/)
+[![Orchestration](https://img.shields.io/badge/Orchestration-K3s_Kubernetes-326CE5?logo=kubernetes&logoColor=white)](k8s/)
+[![Observability](https://img.shields.io/badge/Monitoring-Prometheus_%26_Grafana-F46800?logo=grafana&logoColor=white)](docs/phase-5-observability-prometheus-grafana.md)
+[![AIOps](https://img.shields.io/badge/AIOps-K8sGPT-10A37F?logo=openai&logoColor=white)](docs/phase-6-aiops-k8sgpt.md)
 
-`k8sgpt` is a tool for scanning your Kubernetes clusters, diagnosing, and triaging issues in simple English.
+An enterprise-grade, production-modeled DevOps pipeline deploying a distributed polyglot microservices application to AWS using **Infrastructure as Code (Terraform)**, **Automated Configuration Management (Ansible)**, **Kubernetes Orchestration (K3s)**, **Shift-Left Security (Trivy)**, **Full-Stack Observability (Prometheus & Grafana)**, and **AIOps Root Cause Analysis (K8sGPT + LLM)**.
 
-It has SRE experience codified into its analyzers and helps to pull out the most relevant information to enrich it with AI.
+---
 
-_Out of the box integration with OpenAI, Azure, Cohere, Amazon Bedrock, Google Gemini and local models._
+## Executive Summary & System Architecture
 
+The voting application is a distributed system designed to demonstrate asynchronous event processing, caching, persistent relational storage, and real-time frontend synchronization across distinct programming runtimes:
 
-> **Sister project:** Check out [sympozium](https://github.com/AlexsJones/sympozium/) for managing agents in Kubernetes.
+```mermaid
+flowchart TB
+    subgraph Clients["External Users & Traffic"]
+        UserBrowser["Voter Browser"]
+        ResultViewer["Results Screen"]
+        LoadSim["Traffic Generator (generate_load.sh)"]
+    end
 
+    subgraph AWS_EC2["AWS Cloud (ap-south-1) - K3s Single-Node Cluster"]
+        subgraph Web_Tier["Web & Ingress Tier (NodePort)"]
+            NodePortVote["NodePort: 31000<br/>Service: vote"]
+            NodePortResult["NodePort: 31001<br/>Service: result"]
+            VoteDeploy["Vote App (2 Replicas)<br/>Python 3.11 / Flask"]
+            ResultDeploy["Result App (1 Replica)<br/>Node.js 18 / Express + Socket.io"]
+        end
 
-<a href="https://www.producthunt.com/posts/k8sgpt?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-k8sgpt" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=389489&theme=light" alt="K8sGPT - K8sGPT&#0032;gives&#0032;Kubernetes&#0032;Superpowers&#0032;to&#0032;everyone | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href="https://hellogithub.com/repository/9dfe44c18dfb4d6fa0181baf8b2cf2e1" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=9dfe44c18dfb4d6fa0181baf8b2cf2e1&claim_uid=gqG4wmzkMrP0eFy" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+        subgraph Messaging_Data_Tier["Asynchronous Messaging & Storage"]
+            RedisSvc["Service: redis:6379"]
+            RedisPod["Redis 7 Alpine (In-Memory Queue)"]
+            WorkerDeploy["Worker App (1 Replica)<br/>.NET 7.0 Console"]
+            PostgresSvc["Service: db:5432"]
+            PostgresPod["PostgreSQL 15 Alpine"]
+            PostgresPVC["PersistentVolumeClaim (1Gi gp3)"]
+        end
 
+        subgraph Observability_Tier["Observability & SRE (monitoring namespace)"]
+            Prometheus["Prometheus Server (v2.45.0)<br/>NodePort: 32090"]
+            Grafana["Grafana Dashboards (v10.0.3)<br/>NodePort: 32300"]
+            cAdvisor["cAdvisor (Kubelet cgroups)"]
+            KSM["kube-state-metrics"]
+        end
 
-<img src="images/demo4.gif" width="650px">
+        subgraph AIOps_Layer["AIOps Diagnostic Layer"]
+            K8sGPT["K8sGPT SRE Engine"]
+            LLMBackend["OpenRouter / OpenAI LLM"]
+        end
+    end
 
-# Table of Contents
-- [Overview](#k8sgpt)
-- [Installation](#cli-installation)
-- [Quick Start](#quick-start)
-- [Analyzers](#analyzers)
-- [Examples](#examples)
-- [LLM AI Backends](#llm-ai-backends)
-- [Key Features](#key-features)
-- [Model Context Protocol (MCP)](#model-context-protocol-mcp)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Community](#community)
+    UserBrowser --> NodePortVote
+    LoadSim --> NodePortVote
+    ResultViewer --> NodePortResult
 
-# CLI Installation
+    NodePortVote --> VoteDeploy
+    NodePortResult --> ResultDeploy
 
-### Linux/Mac via brew
+    VoteDeploy -->|1. LPUSH votes| RedisSvc
+    RedisSvc --> RedisPod
 
-```sh
-brew install k8sgpt
+    WorkerDeploy -->|2. RPOP votes| RedisSvc
+    WorkerDeploy -->|3. INSERT / UPDATE votes| PostgresSvc
+    PostgresSvc --> PostgresPod
+    PostgresPod --> PostgresPVC
+
+    ResultDeploy -->|4. Query & Broadcast Tally| PostgresSvc
+
+    cAdvisor -->|Container cgroups| Prometheus
+    KSM -->|K8s Resource State| Prometheus
+    Prometheus -->|TSDB PromQL| Grafana
+
+    K8sGPT -->|Cluster Anomaly Scan| K3s_Pods["Kubernetes Pods & Events"]
+    K8sGPT -->|Sanitized Payload| LLMBackend
 ```
 
-or
+### Component Overview
 
-```sh
-brew tap k8sgpt-ai/k8sgpt
-brew install k8sgpt
+| Service | Runtime / Stack | Exposed Ports | Upstream Dependencies | Storage / State |
+| :--- | :--- | :--- | :--- | :--- |
+| **`vote`** | Python 3.11-slim (Flask) | Port `80` (NodePort `31000`) | Redis | Stateless (Cookie voter ID) |
+| **`redis`** | Redis 7.0 Alpine | Port `6379` (ClusterIP) | None | In-memory queue (`votes`) |
+| **`worker`** | .NET 7.0 C# Worker | Background process | Redis, PostgreSQL | Stateless consumer |
+| **`db`** | PostgreSQL 15 Alpine | Port `5432` (ClusterIP) | None | 1Gi PVC (`/var/lib/postgresql/data`) |
+| **`result`** | Node.js 18-slim (Socket.io) | Port `4000` (NodePort `31001`)| PostgreSQL | Stateless viewer |
+| **`prometheus`** | Prometheus v2.45.0 | Port `9090` (NodePort `32090`)| cAdvisor, kube-state-metrics | EmptyDir / ConfigMap TSDB |
+| **`grafana`** | Grafana v10.0.3 | Port `3000` (NodePort `32300`)| Prometheus Datasource | Dashboards-as-Code |
+
+---
+
+## Deployment & Engineering Phases
+
+Detailed, phase-by-phase implementation blueprints with verification steps and screenshots:
+
+1. 📦 **[Phase 1: Containerization & CI](docs/phase-1-containerization-ci.md)**
+   - Multi-stage Docker builds for Python, Node.js, and .NET.
+   - Non-root user permissions and layer caching strategies.
+   - GitHub Actions matrix build and container registry packaging.
+2. 🛡️ **[Phase 2: Security & DevSecOps](docs/phase-2-security-devsecops.md)**
+   - Shift-Left security scanning with Aqua Security Trivy.
+   - Static vulnerability analysis of OS and application packages.
+   - Automated CVE reporting prior to Docker Hub image publishing.
+3. ☁️ **[Phase 3: Infrastructure as Code (Terraform & Ansible)](docs/phase-3-iac-terraform-ansible.md)**
+   - Provisioning AWS VPC, EC2 compute (`t3.small`), and security groups via Terraform.
+   - Dynamic 4096-bit RSA SSH key pair generation and inventory templating.
+   - Idempotent K3s cluster bootstrapping and remote kubeconfig generation via Ansible.
+4. ☸️ **[Phase 4: Kubernetes Cluster Deployment](docs/phase-4-kubernetes-deployment.md)**
+   - Production manifests: Deployments, Services, Secrets, and PersistentVolumeClaims.
+   - Zero-downtime rolling updates and replica management.
+   - Verification of active NodePort endpoints across the public AWS host.
+5. 📊 **[Phase 5: Observability (Prometheus & Grafana)](docs/phase-5-observability-prometheus-grafana.md)**
+   - Real-time kernel and container cgroup metric collection via cAdvisor.
+   - Cluster object tracking with `kube-state-metrics`.
+   - Workload visualization via Grafana Dashboard 15760 and high-concurrency traffic simulation.
+6. 🤖 **[Phase 6: AIOps Incident Diagnosis (K8sGPT)](docs/phase-6-aiops-k8sgpt.md)**
+   - Integration of K8sGPT CLI with OpenAI / OpenRouter LLM backends.
+   - Automated SRE triage for container crashes (`exitCode=145`) and `CrashLoopBackOff`.
+   - Plain-English root cause analysis and automated deployment rollback.
+
+---
+
+## Infrastructure Architecture Diagram
+
+![Architecture Diagram](architecture.excalidraw.png)
+
+---
+
+## Quickstart Guide
+
+### Option A: Local Testing with Docker Compose
+Run the entire distributed application locally in isolated bridge networks:
+
+```bash
+# Clone the repository
+git clone https://github.com/rahulbastia00/devops-voting-app-pipeline.git
+cd devops-voting-app-pipeline
+
+# Start all containers in detached mode
+docker compose up -d --build
+
+# Verify container health
+docker compose ps
+```
+- **Vote App:** [http://localhost:5000](http://localhost:5000)
+- **Result App:** [http://localhost:5001](http://localhost:5001)
+
+```bash
+# Teardown local containers and volumes
+docker compose down -v
 ```
 
-<details>
-  <summary>RPM-based installation (RedHat/CentOS/Fedora)</summary>
+---
 
-**32 bit:**
+### Option B: Cloud Deployment to AWS (Terraform + Ansible + K3s)
 
-  <!---x-release-please-start-version-->
+#### Prerequisites
+- AWS CLI configured with administrator credentials (`aws configure`)
+- Terraform `>= 1.5.0`
+- Ansible `>= 2.14`
+- `kubectl`
 
-  ```
-  sudo rpm -ivh https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_386.rpm
-  ```
-  <!---x-release-please-end-->
-
-**64 bit:**
-
-  <!---x-release-please-start-version-->
-  ```
-  sudo rpm -ivh https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_amd64.rpm
-  ```
-  <!---x-release-please-end-->
-</details>
-
-<details>
-  <summary>DEB-based installation (Ubuntu/Debian)</summary>
-
-**32 bit:**
-
-  <!---x-release-please-start-version-->
-
+#### 1. Provision AWS Cloud Infrastructure
+```bash
+cd terraform
+terraform init
+terraform apply -auto-approve
 ```
-curl -LO https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_386.deb
-sudo dpkg -i k8sgpt_386.deb
+*Terraform will output the EC2 Public IP and automatically generate `ansible/inventory.ini` and `terraform/id_rsa`.*
+
+#### 2. Bootstrap K3s Kubernetes with Ansible
+```bash
+cd ../ansible
+ansible-playbook -i inventory.ini playbook.yml
 ```
+*Ansible installs K3s with public TLS SAN and retrieves the configured `k3s-aws.yaml` kubeconfig to the root directory.*
 
-  <!---x-release-please-end-->
+#### 3. Deploy Kubernetes Workloads & Monitoring
+```bash
+cd ..
+export KUBECONFIG=$(pwd)/k3s-aws.yaml
 
-**64 bit:**
+# Deploy storage, data tier, worker, and web apps
+kubectl apply -f k8s/00-storage-config.yaml
+kubectl apply -f k8s/01-data-tier.yaml
+kubectl apply -f k8s/02-worker.yaml
+kubectl apply -f k8s/03-web-apps.yaml
 
-  <!---x-release-please-start-version-->
+# Deploy full-stack observability
+kubectl apply -f k8s/06-prometheus-config.yaml
+kubectl apply -f k8s/05-grafana-dashboards.yaml
+kubectl apply -f k8s/04-monitoring.yaml
 
-```
-curl -LO https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_amd64.deb
-sudo dpkg -i k8sgpt_amd64.deb
-```
-
-  <!---x-release-please-end-->
-</details>
-
-<details>
-
-  <summary>APK-based installation (Alpine)</summary>
-
-**32 bit:**
-
-  <!---x-release-please-start-version-->
-  ```
-  wget https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_386.apk
-  apk add --allow-untrusted k8sgpt_386.apk
-  ```
-  <!---x-release-please-end-->
-
-**64 bit:**
-
-  <!---x-release-please-start-version-->
-  ```
-  wget https://github.com/k8sgpt-ai/k8sgpt/releases/download/v0.4.41/k8sgpt_amd64.apk
-  apk add --allow-untrusted k8sgpt_amd64.apk
-  ```
-  <!---x-release-please-end-->
-</details>
-
-<details>
-  <summary>Failing Installation on WSL or Linux (missing gcc)</summary>
-  When installing Homebrew on WSL or Linux, you may encounter the following error:
-
-```
-==> Installing k8sgpt from k8sgpt-ai/k8sgpt Error: The following formula cannot be installed from a bottle and must be
-built from the source. k8sgpt Install Clang or run brew install gcc.
+# Verify all pods are running
+kubectl get pods -A
 ```
 
-If you install gcc as suggested, the problem will persist. Therefore, you need to install the build-essential package.
+#### 4. Access Live Services
+Replace `<EC2_PUBLIC_IP>` with the public IP from Terraform output:
+- **Voting Web UI:** `http://<EC2_PUBLIC_IP>:31000`
+- **Result Web UI:** `http://<EC2_PUBLIC_IP>:31001`
+- **Prometheus Dashboard:** `http://<EC2_PUBLIC_IP>:32090`
+- **Grafana Dashboards:** `http://<EC2_PUBLIC_IP>:32300` (Default credentials: `admin` / `admin`)
 
+#### 5. Generate Load & Observe Metrics
+```bash
+chmod +x generate_load.sh
+./generate_load.sh
 ```
-   sudo apt-get update
-   sudo apt-get install build-essential
-```
 
-</details>
+#### 6. Run AIOps Diagnostic Scan
+```bash
+# Authenticate K8sGPT
+k8sgpt auth add --backend openai --model gpt-4o-mini --password "<YOUR_API_KEY>"
 
-### Windows
-
-- Download the latest Windows binaries of **k8sgpt** from the [Release](https://github.com/k8sgpt-ai/k8sgpt/releases)
-  tab based on your system architecture.
-- Extract the downloaded package to your desired location. Configure the system _PATH_ environment variable with the binary location
-
-## Operator Installation
-
-To install within a Kubernetes cluster please use our `k8sgpt-operator` with installation instructions available [here](https://github.com/k8sgpt-ai/k8sgpt-operator)
-
-_This mode of operation is ideal for continuous monitoring of your cluster and can integrate with your existing monitoring such as Prometheus and Alertmanager._
-
-## Quick Start
-
-- Currently, the default AI provider is OpenAI, you will need to generate an API key from [OpenAI](https://openai.com)
-  - You can do this by running `k8sgpt generate` to open a browser link to generate it
-- Run `k8sgpt auth add` to set it in k8sgpt.
-  - You can provide the password directly using the `--password` flag.
-- Run `k8sgpt filters` to manage the active filters used by the analyzer. By default, all filters are executed during analysis.
-- Run `k8sgpt analyze` to run a scan.
-- And use `k8sgpt analyze --explain` to get a more detailed explanation of the issues.
-- You also run `k8sgpt analyze --with-doc` (with or without the explain flag) to get the official documentation from Kubernetes.
-
-# Using with Claude Desktop
-
-K8sGPT can be integrated with Claude Desktop to provide AI-powered Kubernetes cluster analysis. This integration requires K8sGPT v0.4.14 or later.
-
-## Prerequisites
-
-1. Install K8sGPT v0.4.14 or later:
-   ```sh
-   brew install k8sgpt
-   ```
-
-2. Install Claude Desktop from the official website
-
-3. Configure K8sGPT with your preferred AI backend:
-   ```sh
-   k8sgpt auth
-   ```
-
-## Setup
-
-1. Start the K8sGPT MCP server:
-   ```sh
-   k8sgpt serve --mcp
-   ```
-
-2. In Claude Desktop:
-   - Open Settings
-   - Navigate to the Integrations section
-   - Add K8sGPT as a new integration
-   - The MCP server will be automatically detected
-
-3. Configure Claude Desktop with the following JSON:
-
-  ```json
-  {
-    "mcpServers": {
-      "k8sgpt": {
-        "command": "k8sgpt",
-        "args": [
-          "serve",
-          "--mcp"
-        ]
-      }
-    }
-  }
-  ```
-
-## Usage
-
-Once connected, you can use Claude Desktop to:
-- Analyze your Kubernetes cluster
-- Get detailed insights about cluster health
-- Receive recommendations for fixing issues
-- Query cluster information
-
-Example commands in Claude Desktop:
-- "Analyze my Kubernetes cluster"
-- "What's the health status of my cluster?"
-- "Show me any issues in the default namespace"
-
-## Troubleshooting
-
-If you encounter connection issues:
-1. Ensure K8sGPT is running with the MCP server enabled
-2. Verify your Kubernetes cluster is accessible
-3. Check that your AI backend is properly configured
-4. Restart both K8sGPT and Claude Desktop
-
-For more information, visit our [documentation](https://docs.k8sgpt.ai).
-
-## Analyzers
-
-K8sGPT uses analyzers to triage and diagnose issues in your cluster. It has a set of analyzers that are built in, but
-you will be able to write your own analyzers.
-
-### Built in analyzers
-
-#### Enabled by default
-
-- [x] podAnalyzer
-- [x] pvcAnalyzer
-- [x] rsAnalyzer
-- [x] serviceAnalyzer
-- [x] eventAnalyzer
-- [x] ingressAnalyzer
-- [x] statefulSetAnalyzer
-- [x] deploymentAnalyzer
-- [x] jobAnalyzer
-- [x] cronJobAnalyzer
-- [x] nodeAnalyzer
-- [x] mutatingWebhookAnalyzer
-- [x] validatingWebhookAnalyzer
-- [x] configMapAnalyzer
-
-#### Optional
-
-- [x] hpaAnalyzer
-- [x] pdbAnalyzer
-- [x] networkPolicyAnalyzer
-- [x] gatewayClass
-- [x] gateway
-- [x] httproute
-- [x] logAnalyzer
-- [x] storageAnalyzer
-- [x] securityAnalyzer
-- [x] CatalogSource
-- [x] ClusterCatalog
-- [x] ClusterExtension
-- [x] ClusterService
-- [x] ClusterServiceVersion
-- [x] OperatorGroup
-- [x] InstallPlan
-- [x] Subscription
-- [x] ValidatingAdmissionPolicy
-- [x] ResourceClaim
-
-## Examples
-
-_Run a scan with the default analyzers_
-
-```
-k8sgpt generate
-k8sgpt auth add
+# Analyze cluster health in natural language
 k8sgpt analyze --explain
-k8sgpt analyze --explain --with-doc
 ```
 
-_Filter on resource_
+---
 
-```
-k8sgpt analyze --explain --filter=Service
-```
+## Teardown & Clean Up
 
-_Filter by namespace_
-
-```
-k8sgpt analyze --explain --filter=Pod --namespace=default
-```
-
-_Output to JSON_
-
-```
-k8sgpt analyze --explain --filter=Service --output=json
-```
-
-_Anonymize during explain_
-
-```
-k8sgpt analyze --explain --filter=Service --output=json --anonymize
-```
-
-<details>
-<summary> Using filters </summary>
-
-_List filters_
-
-```
-k8sgpt filters list
-```
-
-_Add default filters_
-
-```
-k8sgpt filters add [filter(s)]
-```
-
-### Examples :
-
-- Simple filter : `k8sgpt filters add Service`
-- Multiple filters : `k8sgpt filters add Ingress,Pod`
-
-_Remove default filters_
-
-```
-k8sgpt filters remove [filter(s)]
-```
-
-### Examples :
-
-- Simple filter : `k8sgpt filters remove Service`
-- Multiple filters : `k8sgpt filters remove Ingress,Pod`
-
-</details>
-
-<details>
-
-<summary> Additional commands </summary>
-
-_List configured backends_
-
-```
-k8sgpt auth list
-```
-
-_Update configured backends_
-
-```
-k8sgpt auth update $MY_BACKEND1,$MY_BACKEND2..
-```
-
-_Remove configured backends_
-
-```
-k8sgpt auth remove -b $MY_BACKEND1,$MY_BACKEND2..
-```
-
-_List integrations_
-
-```
-k8sgpt integrations list
-```
-
-_Activate integrations_
-
-```
-k8sgpt integrations activate [integration(s)]
-```
-
-_Use integration_
-
-```
-k8sgpt analyze --filter=[integration(s)]
-```
-
-_Deactivate integrations_
-
-```
-k8sgpt integrations deactivate [integration(s)]
-```
-
-_Serve mode_
-
-```
-k8sgpt serve
-```
-
-_Serve mode with MCP (Model Context Protocol)_
-
-```
-# Enable MCP server on default port 8089
-k8sgpt serve --mcp --mcp-http
-
-# Enable MCP server on custom port
-k8sgpt serve --mcp --mcp-http --mcp-port 8089
-
-# Full serve mode with MCP
-k8sgpt serve --mcp --mcp-http --port 8080 --metrics-port 8081 --mcp-port 8089
-```
-
-The MCP server enables integration with tools like Claude Desktop and other MCP-compatible clients. It runs on port 8089 by default and provides:
-- Kubernetes cluster analysis via MCP protocol
-- Resource information and health status
-- AI-powered issue explanations and recommendations
-
-For Helm chart deployment with MCP support, see the `charts/k8sgpt/values-mcp-example.yaml` file.
-
-_Analysis with serve mode_
-
-```
-grpcurl -plaintext -d '{"namespace": "k8sgpt", "explain" : "true"}' localhost:8080 schema.v1.ServerAnalyzerService/Analyze
-{
-  "status": "OK"
-}
-```
-
-_Analysis with custom headers_
-
-```
-k8sgpt analyze --explain --custom-headers CustomHeaderKey:CustomHeaderValue
-```
-
-_Print analysis stats_
-
-```
-k8sgpt analyze -s
-The stats mode allows for debugging and understanding the time taken by an analysis by displaying the statistics of each analyzer.
-- Analyzer Ingress took 47.125583ms
-- Analyzer PersistentVolumeClaim took 53.009167ms
-- Analyzer CronJob took 57.517792ms
-- Analyzer Deployment took 156.6205ms
-- Analyzer Node took 160.109833ms
-- Analyzer ReplicaSet took 245.938333ms
-- Analyzer StatefulSet took 448.0455ms
-- Analyzer Pod took 5.662594708s
-- Analyzer Service took 38.583359166s
-```
-
-_Diagnostic information_
-
-To collect diagnostic information use the following command to create a `dump_<timestamp>_json` in your local directory.
-```
-k8sgpt dump
-```
-
-</details>
-
-## LLM AI Backends
-
-K8sGPT uses the chosen LLM, generative AI provider when you want to explain the analysis results using --explain flag e.g. `k8sgpt analyze --explain`. You can use `--backend` flag to specify a configured provider (it's `openai` by default).
-
-You can list available providers using `k8sgpt auth list`:
-
-```
-Default:
-> openai
-Active:
-Unused:
-> openai
-> localai
-> ollama
-> azureopenai
-> cohere
-> amazonbedrock
-> amazonsagemaker
-> google
-> huggingface
-> noopai
-> googlevertexai
-> watsonxai
-> customrest
-> ibmwatsonxai
-> litellm
-```
-
-For detailed documentation on how to configure and use each provider see [here](https://docs.k8sgpt.ai/reference/providers/backend/).
-
-_Using LiteLLM (route to 100+ providers through one proxy)_
-
-The `litellm` backend talks to a [LiteLLM proxy](https://docs.litellm.ai/docs/simple_proxy),
-which exposes an OpenAI-compatible API in front of 100+ providers (OpenAI, Azure,
-Anthropic, Bedrock, Gemini, ...). It defaults to the proxy's standard local
-endpoint (`http://localhost:4000/v1`); use `--model` to pick a model configured
-in your proxy, and `--baseurl` to point at a remote proxy. A password is only
-needed if your proxy enforces a virtual key.
-
-```
-k8sgpt auth add --backend litellm --model gpt-4o
-k8sgpt analyze --explain --backend litellm
-```
-
-_To set a new default provider_
-
-```
-k8sgpt auth default -p azureopenai
-Default provider set to azureopenai
-```
-
-_Using Amazon Bedrock Converse with inference profiles_
-
-_System Inference Profile_
-
-```
-k8sgpt auth add --backend amazonbedrockconverse --providerRegion us-east-1 --model arn:aws:bedrock:us-east-1:123456789012:inference-profile/my-inference-profile
-
-```
-
-_Application Inference Profile_
-
-```
-k8sgpt auth add --backend amazonbedrockconverse --providerRegion us-east-1 --model arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/2uzp4s0w39t6
-
-```
-_Using Amazon Bedrock with inference profiles_
-
-_System Inference Profile_
-
-```
-k8sgpt auth add --backend amazonbedrock --providerRegion us-east-1 --model arn:aws:bedrock:us-east-1:123456789012:inference-profile/my-inference-profile
-
-```
-
-_Application Inference Profile_
-
-```
-k8sgpt auth add --backend amazonbedrock --providerRegion us-east-1 --model arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/2uzp4s0w39t6
-
-```
-
-## Key Features
-
-<details>
-
-With this option, the data is anonymized before being sent to the AI Backend. During the analysis execution, `k8sgpt` retrieves sensitive data (Kubernetes object names, labels, etc.). This data is masked when sent to the AI backend and replaced by a key that can be used to de-anonymize the data when the solution is returned to the user.
-
-<summary> Anonymization </summary>
-
-1. Error reported during analysis:
+To avoid unnecessary cloud charges, destroy all provisioned AWS resources using Terraform:
 
 ```bash
-Error: HorizontalPodAutoscaler uses StatefulSet/fake-deployment as ScaleTargetRef which does not exist.
+cd terraform
+terraform destroy -auto-approve
 ```
-
-2. Payload sent to the AI backend:
-
-```bash
-Error: HorizontalPodAutoscaler uses StatefulSet/tGLcCRcHa1Ce5Rs as ScaleTargetRef which does not exist.
-```
-
-3. Payload returned by the AI:
-
-```bash
-The Kubernetes system is trying to scale a StatefulSet named tGLcCRcHa1Ce5Rs using the HorizontalPodAutoscaler, but it cannot find the StatefulSet. The solution is to verify that the StatefulSet name is spelled correctly and exists in the same namespace as the HorizontalPodAutoscaler.
-```
-
-4. Payload returned to the user:
-
-```bash
-The Kubernetes system is trying to scale a StatefulSet named fake-deployment using the HorizontalPodAutoscaler, but it cannot find the StatefulSet. The solution is to verify that the StatefulSet name is spelled correctly and exists in the same namespace as the HorizontalPodAutoscaler.
-```
-
-### Further Details
-
-Note: **Anonymization does not currently apply to events.**
-
-_In a few analysers like Pod, we feed to the AI backend the event messages which are not known beforehand thus we are not masking them for the **time being**._
-
-- The following is the list of analysers in which data is **being masked**:-
-
-  - Statefulset
-  - Service
-  - PodDisruptionBudget
-  - Node
-  - NetworkPolicy
-  - Ingress
-  - HPA
-  - Deployment
-  - Cronjob
-
-- The following is the list of analysers in which data is **not being masked**:-
-
-  - ReplicaSet
-  - PersistentVolumeClaim
-  - Pod
-  - Log
-  - **_\*Events_**
-
-**\*Note**:
-
-- k8gpt will not mask the above analysers because they do not send any identifying information except **Events** analyser.
-- Masking for **Events** analyzer is scheduled in the near future as seen in this [issue](https://github.com/k8sgpt-ai/k8sgpt/issues/560). _Further research has to be made to understand the patterns and be able to mask the sensitive parts of an event like pod name, namespace etc._
-
-- The following is the list of fields which are not **being masked**:-
-
-  - Describe
-  - ObjectStatus
-  - Replicas
-  - ContainerStatus
-  - **_\*Event Message_**
-  - ReplicaStatus
-  - Count (Pod)
-
-**\*Note**:
-
-- It is quite possible the payload of the event message might have something like "super-secret-project-pod-X crashed" which we don't currently redact _(scheduled in the near future as seen in this [issue](https://github.com/k8sgpt-ai/k8sgpt/issues/560))_.
-
-### Proceed with care
-
-- The K8gpt team recommends using an entirely different backend **(a local model) in critical production environments**. By using a local model, you can rest assured that everything stays within your DMZ, and nothing is leaked.
-- If there is any uncertainty about the possibility of sending data to a public LLM (open AI, Azure AI) and it poses a risk to business-critical operations, then, in such cases, the use of public LLM should be avoided based on personal assessment and the jurisdiction of risks involved.
-
-</details>
-
-<details>
-<summary> Configuration management</summary>
-
-`k8sgpt` stores config data in the `$XDG_CONFIG_HOME/k8sgpt/k8sgpt.yaml` file. The data is stored in plain text, including your OpenAI key.
-
-Config file locations:
-| OS | Path |
-| ------- | ------------------------------------------------ |
-| MacOS | ~/Library/Application Support/k8sgpt/k8sgpt.yaml |
-| Linux | ~/.config/k8sgpt/k8sgpt.yaml |
-| Windows | %LOCALAPPDATA%/k8sgpt/k8sgpt.yaml |
-
-</details>
-
-<details>
-There may be scenarios where caching remotely is preferred.
-In these scenarios K8sGPT supports AWS S3 or Azure Blob storage Integration.
-
-<summary> Remote caching </summary>
-<em>Note: You can configure and use only one remote cache at a time</em>
-
-_Adding a remote cache_
-
-- AWS S3
-  - _As a prerequisite `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are required as environmental variables._
-  - Configuration, `k8sgpt cache add s3 --region <aws region> --bucket <name>`
-  - Minio Configuration with HTTP endpoint ` k8sgpt cache add s3 --bucket <name> --endpoint <http://localhost:9000>`
-  - Minio Configuration with HTTPs endpoint, skipping TLS verification ` k8sgpt cache add s3 --bucket <name> --endpoint <https://localhost:9000> --insecure`
-    - K8sGPT will create the bucket if it does not exist
-- Azure Storage
-  - We support a number of [techniques](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#2-authenticate-with-azure) to authenticate against Azure
-  - Configuration, `k8sgpt cache add azure --storageacc <storage account name> --container <container name>`
-    - K8sGPT assumes that the storage account already exist and it will create the container if it does not exist
-    - It is the **user** responsibility have to grant specific permissions to their identity in order to be able to upload blob files and create SA containers (e.g Storage Blob Data Contributor)
-- Google Cloud Storage
-  - _As a prerequisite `GOOGLE_APPLICATION_CREDENTIALS` are required as environmental variables._
-  - Configuration, ` k8sgpt cache add gcs --region <gcp region> --bucket <name> --projectid <project id>`
-    - K8sGPT will create the bucket if it does not exist
-
-_Listing cache items_
-
-```
-k8sgpt cache list
-```
-
-_Purging an object from the cache_
-Note: purging an object using this command will delete upstream files, so it requires appropriate permissions.
-
-```
-k8sgpt cache purge $OBJECT_NAME
-```
-
-_Removing the remote cache_
-Note: this will not delete the upstream S3 bucket or Azure storage container
-
-```
-k8sgpt cache remove
-```
-
-</details>
-
-<details>
-<summary> Custom Analyzers</summary>
-
-There may be scenarios where you wish to write your own analyzer in a language of your choice.
-K8sGPT now supports the ability to do so by abiding by the [schema](https://github.com/k8sgpt-ai/schemas/blob/main/protobuf/schema/v1/custom_analyzer.proto) and serving the analyzer for consumption.
-To do so, define the analyzer within the K8sGPT configuration and it will add it into the scanning process.
-In addition to this you will need to enable the following flag on analysis:
-
-```
-k8sgpt analyze --custom-analysis
-```
-
-Here is an example local host analyzer in [Rust](https://github.com/k8sgpt-ai/host-analyzer)
-When this is run on `localhost:8080` the K8sGPT config can pick it up with the following additions:
-
-```
-custom_analyzers:
-  - name: host-analyzer
-    connection:
-      url: localhost
-      port: 8080
-```
-
-This now gives the ability to pass through hostOS information ( from this analyzer example ) to K8sGPT to use as context with normal analysis.
-
-_See the docs on how to write a custom analyzer_
-
-_Listing custom analyzers configured_
-```
-k8sgpt custom-analyzer list
-```
-
-_Adding custom analyzer without install_
-```
-k8sgpt custom-analyzer add --name my-custom-analyzer --port 8085
-```
-
-_Removing custom analyzer_
-```
-k8sgpt custom-analyzer remove --names "my-custom-analyzer,my-custom-analyzer-2"
-```
-
-</details>
-## Model Context Protocol (MCP)
-
-K8sGPT provides a Model Context Protocol server that exposes Kubernetes operations as standardized tools for AI assistants like Claude, ChatGPT, and other MCP-compatible clients.
-
-**Start the MCP server:**
-
-Stdio mode (for local AI assistants):
-```bash
-k8sgpt serve --mcp
-```
-
-HTTP mode (for network access):
-```bash
-k8sgpt serve --mcp --mcp-http --mcp-port 8089
-```
-
-**Features:**
-- 12 tools for cluster analysis, resource management, and debugging
-- 3 resources for cluster information access
-- 3 interactive troubleshooting prompts
-- Stateless HTTP mode for one-off invocations
-- Full integration with Claude Desktop and other MCP clients
-
-**Learn more:** See [MCP.md](MCP.md) for complete documentation, usage examples, and integration guides.
-## Documentation
-
-Find our official documentation available [here](https://docs.k8sgpt.ai)
-
-## Contributing
-
-Please read our [contributing guide](./CONTRIBUTING.md).
-
-## Community
-
-Find us on [Slack](https://join.slack.com/t/k8sgpt/shared_invite/zt-332vhyaxv-bfjJwHZLXWVCB3QaXafEYQ)
-
-<a href="https://github.com/k8sgpt-ai/k8sgpt/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=k8sgpt-ai/k8sgpt" />
-</a>
-
+*This command terminates the EC2 instance, releases the dynamic public IP, removes the security group, deletes the generated AWS Key Pair, and wipes local state.*
