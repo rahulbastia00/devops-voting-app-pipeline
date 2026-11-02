@@ -101,6 +101,24 @@ resource "aws_security_group" "k3s_sg" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
+  # Prometheus
+  ingress {
+    description = "Prometheus UI"
+    from_port   = 32090
+    to_port     = 32090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Grafana
+  ingress {
+    description = "Grafana Dashboard"
+    from_port   = 32300
+    to_port     = 32300
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name = "${var.project_name}-sg"
   }
