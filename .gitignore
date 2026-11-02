@@ -1,29 +1,134 @@
-*.pyc
-project.lock.json
-bin/
-obj/
-.vs/
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.python-version
+.venv/
+venv/
+env/
+
+# ==========================================
+# Node.js
+# ==========================================
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+dist/
+build/
+coverage/
 
-
-# Terraform ignores
-**/.terraform/*
+# ==========================================
+# Terraform
+# ==========================================
+**/.terraform/
 *.tfstate
 *.tfstate.*
+*.tfplan
 crash.log
 crash.*.log
+
+# Terraform variable files (keep example files)
 *.tfvars
 *.tfvars.json
+!*.tfvars.example
+
+# Terraform overrides
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Terraform CLI configuration
 .terraformrc
 terraform.rc
 
-# SSH Keys & Local Configs
+# IMPORTANT: Keep .terraform.lock.hcl tracked
+
+# ==========================================
+# AWS CLI / AWS Credentials
+# ==========================================
+.aws/
+.aws-sam/
+.aws-sso/
+**/credentials
+**/config
+
+# AWS CLI installation artifacts
+/awscliv2.zip
+/aws/
+
+# ==========================================
+# Ansible
+# ==========================================
+ansible/inventory.ini
+ansible/*.retry
+*.retry
+
+# ==========================================
+# Kubernetes
+# ==========================================
+k3s-aws.yaml
+*.kubeconfig
+kubeconfig
+secrets.yaml
+
+# ==========================================
+# SSH Keys & Certificates
+# ==========================================
 id_rsa
 id_rsa.pub
 *.pem
-ansible/inventory.ini
-k3s-aws.yaml
+*.key
+*.ppk
+*.p12
+*.pfx
+
+# ==========================================
+# Environment Variables / Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# ==========================================
+# IDE / Editors
+# ==========================================
+.vscode/
+.vs/
+.idea/
+
+# ==========================================
+# Operating System
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# Logs / Temporary Files
+# ==========================================
+*.log
+tmp/
+temp/
+.cache/
+
+# ==========================================
+# Miscellaneous
+# ==========================================
+*.bak
+*.swp
+*.swo
+*.tmp
+
+# ==========================================
+# Others
+# ==========================================
+postb
+posta
+docs
