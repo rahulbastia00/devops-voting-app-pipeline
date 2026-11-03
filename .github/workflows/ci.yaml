@@ -34,7 +34,7 @@ jobs:
 
       # Build locally into the runner's Docker daemon without pushing
       - name: Build Local Image for Security Scan
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.context }}/Dockerfile
@@ -64,7 +64,7 @@ jobs:
 
       # Tag and Push to Docker Hub
       - name: Push Scanned Image to Docker Hub
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.context }}/Dockerfile
